@@ -1,0 +1,6 @@
+# SBCL
+*.fasl
+
+# VIM
+.*.sw?
+
