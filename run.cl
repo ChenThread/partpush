@@ -18,6 +18,7 @@
 ;;; GLOBALS
 (defparameter *pieces* '())
 (defparameter *player* nil)
+(defparameter *tick-anim-counter* 0)
 
 ;;; required structs for Allegro
 (cffi:defcstruct keyboard-state
@@ -244,25 +245,20 @@
        ,s-piece)))
 
 ;;; STATE DEFINITIONS
-(add-piece 0 1 ("#############"
-                "####        #"
-                "            #"
-                "#     #######"
-                "#     #      "
-                "             "
-                "#######      "
-                "#######      ")
+(add-piece -7 1 ("##     ###########"
+                 "##     ####      #"
+                 "##               #"
+                 "##     #     #####"
+                 "##     #     ##   "
+                 "#             #   "
+                 "##     ########   ")
            :color (al:map-rgb-f 0.5 0.5 0.5)
            :weight +world-weight+)
-(add-piece -1 6 ("###    ###"
-                 "#        #"
-                 "#        #"
-                 "##########"
-                 "   # #    ")
+(add-piece -5 6 ("#    ##    #")
            :color (al:map-rgb-f 0.8 0.8 0.5)
            :weight +light-weight+)
-(add-piece 0 2 ("         #"
-                "##########")
+(add-piece -5 2 ("         #"
+                 "##########")
            :color (al:map-rgb-f 0.8 0.8 0.8)
            :weight +light-weight+)
 (add-piece 2 4 ("# R"
@@ -322,12 +318,26 @@
                        (+ x-cam (* (+ x-pos x-index 1/2) 32))
                        (+ y-cam (* (+ y-pos y-index 1/2) 32))
                        32/2
-                       color))
+                       color)
+                     (al:draw-filled-circle
+                       (+ x-cam (* (+ x-pos x-index 1/2) 32)
+                          (* 11 (sin (* 1/1 *tick-anim-counter*))))
+                       (+ y-cam (* (+ y-pos y-index 1/2) 32)
+                          (* 11 (cos (* 1/1 *tick-anim-counter*))))
+                       3
+                       (al:map-rgb-f 0.0 0.0 0.0)))
               ((#\r) (al:draw-filled-circle
                        (+ x-cam (* (+ x-pos x-index 1/2) 32))
                        (+ y-cam (* (+ y-pos y-index 1/2) 32))
                        32/2
-                       color))
+                       color)
+                     (al:draw-filled-circle
+                       (+ x-cam (* (+ x-pos x-index 1/2) 32)
+                          (* 11 (sin (* -1/1 *tick-anim-counter*))))
+                       (+ y-cam (* (+ y-pos y-index 1/2) 32)
+                          (* 11 (cos (* -1/1 *tick-anim-counter*))))
+                       3
+                       (al:map-rgb-f 0.0 0.0 0.0)))
               ((#\#) (al:draw-filled-rectangle
                        (+ x-cam (* (+ x-pos x-index) 32))
                        (+ y-cam (* (+ y-pos y-index) 32))
@@ -356,8 +366,10 @@
       (tick-piece this))
 
     ;; Other stuff
-    (tick-game)
-    (sleep 0.1)
+    (dotimes (_ 6)
+      (tick-game)
+      (incf *tick-anim-counter* 1/6)
+      (sleep (/ 0.1 6)))
     (al:get-keyboard-state keyboard-state)))
 
 ;;; EXIT
