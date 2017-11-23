@@ -248,12 +248,14 @@
                 "####        #"
                 "            #"
                 "#     #######"
-                "#  #  #      "
-                "   #         "
+                "#     #      "
+                "             "
+                "#######      "
                 "#######      ")
            :color (al:map-rgb-f 0.5 0.5 0.5)
            :weight +world-weight+)
 (add-piece -1 6 ("###    ###"
+                 "#        #"
                  "#        #"
                  "##########"
                  "   # #    ")
@@ -263,13 +265,13 @@
                 "##########")
            :color (al:map-rgb-f 0.8 0.8 0.8)
            :weight +light-weight+)
-(add-piece 4 4 ("R"
-                "#")
-           :color (al:map-rgb-f 0.8 0.8 0.8)
+(add-piece 2 4 ("# R"
+                "  #")
+           :color (al:map-rgb-f 0.8 0.5 0.5)
            :weight +light-weight+)
-(add-piece 1 5 ("r"
-                "#")
-           :color (al:map-rgb-f 0.8 0.8 0.8)
+(add-piece 1 5 ("r #"
+                "#  ")
+           :color (al:map-rgb-f 0.5 0.8 0.5)
            :weight +light-weight+)
 
 (setf *player* (add-piece 0 10 ("@")
