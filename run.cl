@@ -17,6 +17,7 @@
 
 ;;; GLOBALS
 (defparameter *pieces* '())
+(defparameter *player* nil)
 
 ;;; required structs for Allegro
 (cffi:defcstruct keyboard-state
@@ -99,8 +100,8 @@
       (do ((x1 x1-min (+ x1 1))
            (x2 x2-min (+ x2 1)))
         ((>= x1 x1-max))
-        (cond ((eql (aref p1-pattern y1 x1) #\.) nil)
-              ((eql (aref p2-pattern y2 x2) #\.) nil)
+        (cond ((eql (aref p1-pattern y1 x1) #\ ) nil)
+              ((eql (aref p2-pattern y2 x2) #\ ) nil)
               (t (setf retval t)))))
     retval))
 
@@ -119,7 +120,7 @@
           ((<  inner-y 0) nil)
           ((>= inner-x this-xlen) nil)
           ((>= inner-y this-ylen) nil)
-          ((eql (aref this-pattern inner-y inner-x) #\.) nil)
+          ((eql (aref this-pattern inner-y inner-x) #\ ) nil)
           (t t))))
 
 
@@ -226,36 +227,54 @@
                      &key
                      (color (al:map-rgb-f 1.0 1.0 1.0))
                      (weight +light-weight+))
-  `(push
-     (make-general-piece
-       :position '(,x-position ,y-position)
-       :pattern   (make-array (list ,(length      parts )
-                                    ,(length (car parts)))
-                     :initial-contents ',(mapcar
-                                           #'(lambda (row)
-                                               (coerce row 'list))
-                                           parts))
-       :color    ,color
-       :weight   ,weight)
-     *pieces*))
+  (let* ((s-piece (gensym)))
+    ;
+    `(let ((,s-piece
+             (make-general-piece
+               :position '(,x-position ,y-position)
+               :pattern   (make-array (list ,(length      parts )
+                                            ,(length (car parts)))
+                             :initial-contents ',(mapcar
+                                                   #'(lambda (row)
+                                                       (coerce row 'list))
+                                                   parts))
+               :color    ,color
+               :weight   ,weight)))
+       (push ,s-piece *pieces*)
+       ,s-piece)))
 
 ;;; STATE DEFINITIONS
-
-(add-piece 4 5 ("###"
-                "#.."
-                "##R")
-           :color (al:map-rgb-f 1.0 0.6 0.6))
-(add-piece 10 6 ("##"
-                 ".#"
-                 "##")
-           :color (al:map-rgb-f 0.6 1.0 0.6))
-(add-piece 5 9 ("###RRRR#")
+(add-piece 0 1 ("#############"
+                "####        #"
+                "            #"
+                "#     #######"
+                "#  #  #      "
+                "   #         "
+                "#######      ")
+           :color (al:map-rgb-f 0.5 0.5 0.5)
+           :weight +world-weight+)
+(add-piece -1 6 ("###    ###"
+                 "#        #"
+                 "##########"
+                 "   # #    ")
+           :color (al:map-rgb-f 0.8 0.8 0.5)
+           :weight +light-weight+)
+(add-piece 0 2 ("         #"
+                "##########")
            :color (al:map-rgb-f 0.8 0.8 0.8)
-           :weight +ship-weight+)
+           :weight +light-weight+)
+(add-piece 4 4 ("R"
+                "#")
+           :color (al:map-rgb-f 0.8 0.8 0.8)
+           :weight +light-weight+)
+(add-piece 1 5 ("r"
+                "#")
+           :color (al:map-rgb-f 0.8 0.8 0.8)
+           :weight +light-weight+)
 
-(add-piece 10 10 ("@")
-           :color (al:map-rgb-f 1.0 1.0 0.0)
-           :weight +ship-weight+)
+(setf *player* (add-piece 0 10 ("@")
+                          :color (al:map-rgb-f 1.0 1.0 0.0)
+                          :weight +ship-weight+))
 
 ;;; INITIALISATION
 (defparameter *display* (al:create-display 1280 720))
@@ -271,14 +290,13 @@
              (y-pos           (second position))
              (x-len           (array-dimension pattern 1))
              (y-len           (array-dimension pattern 0))
-             (player          (first *pieces*))
-             (player-position (slot-value player 'position))
-             (x-cam           (- 1280/2 (* 0 (nth 0 player-position))))
-             (y-cam           (-  720/2 (* 0 (nth 1 player-position)))))
+             (player-position (slot-value *player* 'position))
+             (x-cam           (- 1280/2 (* 1 32 (nth 0 player-position))))
+             (y-cam           (-  720/2 (* 1 32 (nth 1 player-position)))))
         (dotimes (y-index y-len)
           (dotimes (x-index x-len)
             (ecase (aref pattern y-index x-index)
-              ((#\.) t)
+              ((#\ ) t)
               ((#\@) (al:draw-filled-rectangle
                        (+ x-cam (* (+ x-pos x-index 0) 32)  4)
                        (+ y-cam (* (+ y-pos y-index 0) 32)  4)
@@ -329,7 +347,7 @@
       (when (key-down-p keyboard-state :right) (incf dx  1))
       (when (or (/= dx 0)
                 (/= dy 0))
-        (try-move-piece-by (first *pieces*) dx dy '() '())))
+        (try-move-piece-by *player* dx dy '() '())))
 
     ;; Per-piece applications
     (dolist (this *pieces*)
