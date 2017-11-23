@@ -245,8 +245,7 @@
        ,s-piece)))
 
 ;;; STATE DEFINITIONS
-(add-piece -7 1 ("##     ###########"
-                 "##     ####      #"
+(add-piece -7 2 ("##     ###########"
                  "##               #"
                  "##     #     #####"
                  "##     #     ##   "
@@ -257,8 +256,7 @@
 (add-piece -5 6 ("#    ##    #")
            :color (al:map-rgb-f 0.8 0.8 0.5)
            :weight +light-weight+)
-(add-piece -5 2 ("         #"
-                 "##########")
+(add-piece -5 3 ("##########")
            :color (al:map-rgb-f 0.8 0.8 0.8)
            :weight +light-weight+)
 (add-piece 2 4 ("# R"
