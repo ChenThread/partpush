@@ -133,7 +133,7 @@
            (new-ignores (list this)))
       (dolist (other collisions)
         (unless (member other ignorelist)
-          (setf new-ignores 
+          (setf new-ignores
                 (now-move-piece-by
                   other dx dy
                   (append collisions new-ignores ignorelist)))
@@ -245,15 +245,30 @@
        ,s-piece)))
 
 ;;; STATE DEFINITIONS
-(add-piece -7 2 ("##     ###########"
-                 "##               #"
-                 "##     #     #####"
-                 "##     #     ##   "
-                 "#             #   "
-                 "##     ########   ")
+(add-piece  7 6 ("R"
+                 "R")
+            :color (al:map-rgb-f 1.0 1.0 1.0))
+(add-piece -7 2 ("##     #############"
+                 "##               ###"
+                 "##     #     #######"
+                 "##     #     #### ##"
+                 "##                ##"
+                 "##     #######    ##"
+                 "##     #     #    ##"
+                 "##     #######    ##"
+                 "##           #    ##"
+                 "##           #    ##"
+                 "##           #    ##"
+                 "##           #    ##"
+                 "##           #     #"
+                 "##           #     #"
+                 "##           # #####"
+                 "##           #######")
            :color (al:map-rgb-f 0.5 0.5 0.5)
            :weight +world-weight+)
-(add-piece -5 6 ("#    ##    #")
+(add-piece  0 6 ("##    ##"
+                 "        "
+                 "  ####  ")
            :color (al:map-rgb-f 0.8 0.8 0.5)
            :weight +light-weight+)
 (add-piece -5 3 ("##########")
@@ -268,7 +283,7 @@
            :color (al:map-rgb-f 0.5 0.8 0.5)
            :weight +light-weight+)
 
-(setf *player* (add-piece 0 10 ("@")
+(setf *player* (add-piece -3 10 ("@")
                           :color (al:map-rgb-f 1.0 1.0 0.0)
                           :weight +ship-weight+))
 
