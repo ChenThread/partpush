@@ -258,8 +258,6 @@
 (defun tick-game (oldness)
   (al:clear-to-color (al:map-rgb 0 0 85))
   (let* ((player-old-pos         (slot-value *player* 'old-position))
-         (player-old-pos         (slot-value *player* 'old-position))
-         (player-new-pos         (slot-value *player* 'position))
          (player-new-pos         (slot-value *player* 'position))
          (player-x-old-pos       (nth 0 player-old-pos))
          (player-y-old-pos       (nth 1 player-old-pos))
@@ -279,8 +277,10 @@
                (y-old-pos              (second old-position))
                (x-new-pos              (first  position))
                (y-new-pos              (second position))
-               (x-pos                  (+ x-new-pos (* oldness (- x-old-pos x-new-pos))))
-               (y-pos                  (+ y-new-pos (* oldness (- y-old-pos y-new-pos))))
+               (x-pos                  (+ x-new-pos
+                                          (* oldness (- x-old-pos x-new-pos))))
+               (y-pos                  (+ y-new-pos
+                                          (* oldness (- y-old-pos y-new-pos))))
                (x-len                  (array-dimension pattern 1))
                (y-len                  (array-dimension pattern 0)))
           (dotimes (y-index y-len)
