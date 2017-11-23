@@ -36,10 +36,11 @@
 (defconstant +light-weight+ 1)
 
 (defclass general-piece ()
-  ((position   :documentation "")
-   (pattern    :documentation "")
-   (color      :documentation "")
-   (weight     :documentation "")))
+  ((position     :documentation "")
+   (old-position :documentation "")
+   (pattern      :documentation "")
+   (color        :documentation "")
+   (weight       :documentation "")))
 
 (defgeneric pieces-collide-p (p1 p2 dx dy)
             (:documentation ""))
@@ -218,10 +219,12 @@
 
 (defun make-general-piece (&key position pattern color weight)
   (let ((this (make-instance 'general-piece)))
-    (setf (slot-value this 'position) position)
-    (setf (slot-value this 'pattern ) pattern )
-    (setf (slot-value this 'color   ) color   )
-    (setf (slot-value this 'weight  ) weight  )
+    (setf (slot-value this 'position    ) position)
+    (setf (slot-value this 'old-position) (list (nth 0 position)
+                                                (nth 1 position)))
+    (setf (slot-value this 'pattern     ) pattern )
+    (setf (slot-value this 'color       ) color   )
+    (setf (slot-value this 'weight      ) weight  )
     this))
 
 (defmacro add-piece (x-position y-position parts
@@ -235,6 +238,7 @@
                :position '(,x-position ,y-position)
                :pattern   (make-array (list ,(length      parts )
                                             ,(length (car parts)))
+                             :element-type 'character
                              :initial-contents ',(mapcar
                                                    #'(lambda (row)
                                                        (coerce row 'list))
@@ -251,76 +255,101 @@
 (defparameter *display* (al:create-display 1280 720))
 
 ;;; MAIN LOOP
-(defun tick-game ()
+(defun tick-game (oldness)
   (al:clear-to-color (al:map-rgb 0 0 85))
-  (dolist (piece (reverse *pieces*))
-    (with-slots (position pattern color) piece
-      (let* ((x-pos           (first  position))
-             (y-pos           (second position))
-             (x-len           (array-dimension pattern 1))
-             (y-len           (array-dimension pattern 0))
-             (player-position (slot-value *player* 'position))
-             (x-cam           (- 1280/2 (* 1 32 (nth 0 player-position))))
-             (y-cam           (-  720/2 (* 1 32 (nth 1 player-position)))))
-        (dotimes (y-index y-len)
-          (dotimes (x-index x-len)
-            (ecase (aref pattern y-index x-index)
-              ((#\ ) t)
-              ((#\@) (al:draw-filled-rectangle
-                       (+ x-cam (* (+ x-pos x-index 0) 32)  4)
-                       (+ y-cam (* (+ y-pos y-index 0) 32)  4)
-                       (+ x-cam (* (+ x-pos x-index 1) 32) -4)
-                       (+ y-cam (* (+ y-pos y-index 1) 32) -4)
-                       color)
-                     (al:draw-filled-rectangle
-                       (+ x-cam (* (+ x-pos x-index 0) 32)  8)
-                       (+ y-cam (* (+ y-pos y-index 0) 32)  8)
-                       (+ x-cam (* (+ x-pos x-index 0) 32) 12)
-                       (+ y-cam (* (+ y-pos y-index 0) 32) 12)
-                       (al:map-rgb-f 0.0 0.0 0.0))
-                     (al:draw-filled-rectangle
-                       (+ x-cam (* (+ x-pos x-index 1) 32) -12)
-                       (+ y-cam (* (+ y-pos y-index 0) 32)   8)
-                       (+ x-cam (* (+ x-pos x-index 1) 32)  -8)
-                       (+ y-cam (* (+ y-pos y-index 0) 32)  12)
-                       (al:map-rgb-f 0.0 0.0 0.0))
-                     )
-              ((#\R) (al:draw-filled-circle
-                       (+ x-cam (* (+ x-pos x-index 1/2) 32))
-                       (+ y-cam (* (+ y-pos y-index 1/2) 32))
-                       32/2
-                       color)
-                     (al:draw-filled-circle
-                       (+ x-cam (* (+ x-pos x-index 1/2) 32)
-                          (* 11 (sin (* 1/1 *tick-anim-counter*))))
-                       (+ y-cam (* (+ y-pos y-index 1/2) 32)
-                          (* 11 (cos (* 1/1 *tick-anim-counter*))))
-                       3
-                       (al:map-rgb-f 0.0 0.0 0.0)))
-              ((#\r) (al:draw-filled-circle
-                       (+ x-cam (* (+ x-pos x-index 1/2) 32))
-                       (+ y-cam (* (+ y-pos y-index 1/2) 32))
-                       32/2
-                       color)
-                     (al:draw-filled-circle
-                       (+ x-cam (* (+ x-pos x-index 1/2) 32)
-                          (* 11 (sin (* -1/1 *tick-anim-counter*))))
-                       (+ y-cam (* (+ y-pos y-index 1/2) 32)
-                          (* 11 (cos (* -1/1 *tick-anim-counter*))))
-                       3
-                       (al:map-rgb-f 0.0 0.0 0.0)))
-              ((#\#) (al:draw-filled-rectangle
-                       (+ x-cam (* (+ x-pos x-index) 32))
-                       (+ y-cam (* (+ y-pos y-index) 32))
-                       (+ x-cam (* (+ x-pos x-index 1) 32) -1)
-                       (+ y-cam (* (+ y-pos y-index 1) 32) -1)
-                       color))))))))
+  (let* ((player-old-pos         (slot-value *player* 'old-position))
+         (player-old-pos         (slot-value *player* 'old-position))
+         (player-new-pos         (slot-value *player* 'position))
+         (player-new-pos         (slot-value *player* 'position))
+         (player-x-old-pos       (nth 0 player-old-pos))
+         (player-y-old-pos       (nth 1 player-old-pos))
+         (player-x-new-pos       (nth 0 player-new-pos))
+         (player-y-new-pos       (nth 1 player-new-pos))
+         (player-x-pos           (+ player-x-new-pos (* oldness
+                                                        (- player-x-old-pos
+                                                           player-x-new-pos))))
+         (player-y-pos           (+ player-y-new-pos (* oldness
+                                                        (- player-y-old-pos
+                                                           player-y-new-pos))))
+         (x-cam                  (- 1280/2 (* 1 32 player-x-pos)))
+         (y-cam                  (-  720/2 (* 1 32 player-y-pos))))
+    (dolist (piece (reverse *pieces*))
+      (with-slots (old-position position pattern color) piece
+        (let* ((x-old-pos              (first  old-position))
+               (y-old-pos              (second old-position))
+               (x-new-pos              (first  position))
+               (y-new-pos              (second position))
+               (x-pos                  (+ x-new-pos (* oldness (- x-old-pos x-new-pos))))
+               (y-pos                  (+ y-new-pos (* oldness (- y-old-pos y-new-pos))))
+               (x-len                  (array-dimension pattern 1))
+               (y-len                  (array-dimension pattern 0)))
+          (dotimes (y-index y-len)
+            (dotimes (x-index x-len)
+              (ecase (aref pattern y-index x-index)
+                ((#\ ) t)
+                ((#\@) (al:draw-filled-rectangle
+                         (+ x-cam (* (+ x-pos x-index 0) 32)  4)
+                         (+ y-cam (* (+ y-pos y-index 0) 32)  4)
+                         (+ x-cam (* (+ x-pos x-index 1) 32) -4)
+                         (+ y-cam (* (+ y-pos y-index 1) 32) -4)
+                         color)
+                       (al:draw-filled-rectangle
+                         (+ x-cam (* (+ x-pos x-index 0) 32)  8)
+                         (+ y-cam (* (+ y-pos y-index 0) 32)  8)
+                         (+ x-cam (* (+ x-pos x-index 0) 32) 12)
+                         (+ y-cam (* (+ y-pos y-index 0) 32) 12)
+                         (al:map-rgb-f 0.0 0.0 0.0))
+                       (al:draw-filled-rectangle
+                         (+ x-cam (* (+ x-pos x-index 1) 32) -12)
+                         (+ y-cam (* (+ y-pos y-index 0) 32)   8)
+                         (+ x-cam (* (+ x-pos x-index 1) 32)  -8)
+                         (+ y-cam (* (+ y-pos y-index 0) 32)  12)
+                         (al:map-rgb-f 0.0 0.0 0.0))
+                       )
+                ((#\R) (al:draw-filled-circle
+                         (+ x-cam (* (+ x-pos x-index 1/2) 32))
+                         (+ y-cam (* (+ y-pos y-index 1/2) 32))
+                         32/2
+                         color)
+                       (al:draw-filled-circle
+                         (+ x-cam (* (+ x-pos x-index 1/2) 32)
+                            (* 11 (sin (* 1/1 *tick-anim-counter*))))
+                         (+ y-cam (* (+ y-pos y-index 1/2) 32)
+                            (* 11 (cos (* 1/1 *tick-anim-counter*))))
+                         3
+                         (al:map-rgb-f 0.0 0.0 0.0)))
+                ((#\r) (al:draw-filled-circle
+                         (+ x-cam (* (+ x-pos x-index 1/2) 32))
+                         (+ y-cam (* (+ y-pos y-index 1/2) 32))
+                         32/2
+                         color)
+                       (al:draw-filled-circle
+                         (+ x-cam (* (+ x-pos x-index 1/2) 32)
+                            (* 11 (sin (* -1/1 *tick-anim-counter*))))
+                         (+ y-cam (* (+ y-pos y-index 1/2) 32)
+                            (* 11 (cos (* -1/1 *tick-anim-counter*))))
+                         3
+                         (al:map-rgb-f 0.0 0.0 0.0)))
+                ((#\#) (al:draw-filled-rectangle
+                         (+ x-cam (* (+ x-pos x-index) 32))
+                         (+ y-cam (* (+ y-pos y-index) 32))
+                         (+ x-cam (* (+ x-pos x-index 1) 32) -1)
+                         (+ y-cam (* (+ y-pos y-index 1) 32) -1)
+                         color))))))))
 
-  (al:flip-display))
+    (al:flip-display)))
 
 (cffi:with-foreign-object (keyboard-state '(:struct keyboard-state))
   (al:get-keyboard-state keyboard-state)
   (do () ((key-down-p keyboard-state :escape))
+
+    ;; Interpolation
+    (dolist (this *pieces*)
+      (setf (nth 0 (slot-value this 'old-position))
+            (nth 0 (slot-value this 'position)))
+      (setf (nth 1 (slot-value this 'old-position))
+            (nth 1 (slot-value this 'position))))
+
     ;; Player movement
     (let* ((dx 0)
            (dy 0))
@@ -337,10 +366,11 @@
       (tick-piece this))
 
     ;; Other stuff
-    (dotimes (_ 6)
-      (tick-game)
-      (incf *tick-anim-counter* 1/6)
-      (sleep (/ 0.1 6)))
+    (let ((lerp-frames 5))
+      (dotimes (i lerp-frames)
+        (tick-game (/ (- lerp-frames i) lerp-frames))
+        (incf *tick-anim-counter* (/ lerp-frames))
+        (sleep (/ 1/12 lerp-frames))))
     (al:get-keyboard-state keyboard-state)))
 
 ;;; EXIT
